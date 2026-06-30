@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="RunMap-sample" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>Sample Charles River Loop</name>
+    <trkseg>
+      <trkpt lat="42.3580" lon="-71.0710"><ele>5</ele><time>2026-05-01T12:00:00Z</time></trkpt>
+      <trkpt lat="42.3585" lon="-71.0725"><ele>5</ele><time>2026-05-01T12:00:30Z</time></trkpt>
+      <trkpt lat="42.3592" lon="-71.0740"><ele>6</ele><time>2026-05-01T12:01:00Z</time></trkpt>
+      <trkpt lat="42.3600" lon="-71.0755"><ele>6</ele><time>2026-05-01T12:01:30Z</time></trkpt>
+      <trkpt lat="42.3609" lon="-71.0768"><ele>7</ele><time>2026-05-01T12:02:00Z</time></trkpt>
+      <trkpt lat="42.3618" lon="-71.0780"><ele>7</ele><time>2026-05-01T12:02:30Z</time></trkpt>
+      <trkpt lat="42.3628" lon="-71.0790"><ele>8</ele><time>2026-05-01T12:03:00Z</time></trkpt>
+      <trkpt lat="42.3637" lon="-71.0800"><ele>8</ele><time>2026-05-01T12:03:30Z</time></trkpt>
+      <trkpt lat="42.3645" lon="-71.0812"><ele>9</ele><time>2026-05-01T12:04:00Z</time></trkpt>
+      <trkpt lat="42.3652" lon="-71.0826"><ele>9</ele><time>2026-05-01T12:04:30Z</time></trkpt>
+      <trkpt lat="42.3658" lon="-71.0841"><ele>8</ele><time>2026-05-01T12:05:00Z</time></trkpt>
+      <trkpt lat="42.3662" lon="-71.0857"><ele>8</ele><time>2026-05-01T12:05:30Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>
