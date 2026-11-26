@@ -35,6 +35,7 @@ export async function saveRoute(input: {
   distance_m: number;
   elevation_gain_m: number;
   elevation_profile: RoutePreview["elevation"]["profile"];
+  waypoints: LngLat[];
 }): Promise<{ id: number }> {
   const res = await fetch("/api/routes", {
     method: "POST",

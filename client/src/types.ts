@@ -37,6 +37,8 @@ export interface SavedRouteSummary {
 export interface SavedRoute extends SavedRouteSummary {
   coordinates: LngLat[];
   elevation_profile: ElevationProfilePoint[];
+  /** Null for routes saved before waypoints were kept; those open view-only. */
+  waypoints: LngLat[] | null;
 }
 
 export interface HeatmapFeature {

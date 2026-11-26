@@ -67,6 +67,17 @@ export function migrate(): void {
       ele_m REAL NOT NULL
     );
   `);
+
+  // Added after the first release. Routes saved before it have NULL here and
+  // open view-only, since their waypoints weren't kept.
+  addColumnIfMissing("routes", "waypoints_json", "TEXT"); // [[lon, lat], ...]
+}
+
+function addColumnIfMissing(table: string, column: string, type: string): void {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!cols.some((c) => c.name === column)) {
+    db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`);
+  }
 }
 
 export function activityCount(): number {

@@ -7,6 +7,8 @@ import type { LngLat } from "../lib/geo";
 interface SaveBody {
   name: string;
   coordinates: LngLat[];
+  /** The waypoints the route was built from, so it can be edited later. */
+  waypoints?: LngLat[];
   distance_m: number;
   elevation_gain_m?: number;
   elevation_profile?: ElevationProfilePoint[];
@@ -19,20 +21,24 @@ interface RouteRow {
   elevation_gain_m: number;
   geometry_json: string;
   elevation_json: string;
+  waypoints_json: string | null;
   created_at: string;
 }
 
 export async function savedRoutesRoutes(app: FastifyInstance): Promise<void> {
   // Save a built route.
   app.post<{ Body: SaveBody }>("/api/routes", async (req, reply) => {
-    const { name, coordinates, distance_m } = req.body ?? ({} as SaveBody);
+    const { name, coordinates, distance_m, waypoints } = req.body ?? ({} as SaveBody);
     if (!name?.trim() || !Array.isArray(coordinates) || coordinates.length < 2) {
       return reply.code(400).send({ error: "name and >= 2 coordinates required" });
     }
+    if (waypoints !== undefined && !(Array.isArray(waypoints) && waypoints.length >= 2)) {
+      return reply.code(400).send({ error: "waypoints, if given, must have >= 2 points" });
+    }
     const info = db
       .prepare(
-        `INSERT INTO routes (name, distance_m, elevation_gain_m, geometry_json, elevation_json, created_at)
-         VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO routes (name, distance_m, elevation_gain_m, geometry_json, elevation_json, waypoints_json, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         name.trim(),
@@ -40,6 +46,7 @@ export async function savedRoutesRoutes(app: FastifyInstance): Promise<void> {
         Math.round(req.body.elevation_gain_m ?? 0),
         JSON.stringify(coordinates),
         JSON.stringify(req.body.elevation_profile ?? []),
+        waypoints ? JSON.stringify(waypoints) : null,
         new Date().toISOString(),
       );
     return reply.code(201).send({ id: Number(info.lastInsertRowid) });
@@ -69,6 +76,7 @@ export async function savedRoutesRoutes(app: FastifyInstance): Promise<void> {
       elevation_gain_m: row.elevation_gain_m,
       coordinates: JSON.parse(row.geometry_json),
       elevation_profile: JSON.parse(row.elevation_json),
+      waypoints: row.waypoints_json ? JSON.parse(row.waypoints_json) : null,
       created_at: row.created_at,
     };
   });

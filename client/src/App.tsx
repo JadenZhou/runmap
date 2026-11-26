@@ -121,6 +121,7 @@ export default function App() {
     setWaypoints((w) => [...w.slice(0, i), p, ...w.slice(i)]);
   };
   const undo = () => {
+    setLoadedRoute(null);
     setCurrentSavedId(null);
     setWaypoints((w) => w.slice(0, -1));
   };
@@ -141,6 +142,8 @@ export default function App() {
         distance_m: preview.distance_m,
         elevation_gain_m: preview.elevation.gain_m,
         elevation_profile: preview.elevation.profile,
+        // Where the waypoints attached, so reopening reproduces this route.
+        waypoints: preview.snapped,
       });
       setCurrentSavedId(id);
       refreshSaved();
@@ -152,7 +155,10 @@ export default function App() {
   async function openRoute(id: number) {
     try {
       const r = await getRoute(id);
-      setWaypoints([]);
+      // The saved line shows until the first edit. Setting the waypoints also
+      // re-routes them in the background, which brings up the "+" handles and
+      // makes the first edit fast.
+      setWaypoints(r.waypoints ?? []);
       setPreview(null);
       setRouteError(null);
       setLoadedRoute(r);
