@@ -23,9 +23,8 @@ On first launch the server creates a SQLite DB and **auto-seeds ~75 synthetic
 runs around Boston**, so the heatmap is populated immediately — fully offline,
 no network needed for seeding.
 
-> Requires Node 18+ (developed on Node 22/26). `npm install` builds the native
-> `better-sqlite3` module, so a C/C++ toolchain must be available (standard on
-> macOS with Xcode CLT, and on most Linux setups).
+> Requires Node 22.13 or newer, because the server uses Node's built-in
+> `node:sqlite`. With nvm, run `nvm use` first (the repo has an `.nvmrc`).
 
 ## What you can do
 
@@ -51,7 +50,7 @@ Tables: `routes`, `activities`, `track_points`, `elevation_cache`.
 ```
 runmap/
   client/   React + TypeScript + Vite + MapLibre GL (react-map-gl) + Recharts
-  server/   Fastify + TypeScript + better-sqlite3
+  server/   Fastify + TypeScript + node:sqlite
 ```
 
 The Vite dev server proxies `/api/*` to the Fastify server on port 3001.
@@ -65,7 +64,7 @@ endpoint is slow or down.
 | Concern   | Default                      | Swap via                                           |
 |-----------|------------------------------|----------------------------------------------------|
 | Map tiles | OpenFreeMap `liberty` style  | `MAP_STYLE` constant in `client/src/components/MapView.tsx` |
-| Routing   | **BRouter** (foot profile)   | `ROUTING_PROVIDER=osrm` env var (see note below)   |
+| Routing   | **BRouter**, RunMap's `running` profile | `ROUTING_PROVIDER=osrm` env var (see note below)   |
 | Elevation | **Open-Meteo Elevation API** | `ElevationProvider` in `server/src/providers/`     |
 
 **Routing note (intentional deviation):** the OSRM *public demo* server only
@@ -76,6 +75,15 @@ keyless and follows sidewalks/trails. OSRM is still shipped behind the same
 `OSRM_URL` at a self-hosted *foot* instance for proper running routes. To swap
 to a paid provider later (e.g. Mapbox), add another `RoutingProvider`
 implementation in `server/src/providers/RoutingProvider.ts`.
+
+**Running profile:** routes use `server/profiles/running.brf`, a copy of
+BRouter's `hiking-beta` that doesn't avoid ordinary roads. `hiking-beta` made
+runs detour through parking lots and footpaths, because OSM often has no
+sidewalk tag on suburban roads and the hiking profile then charges up to 10×
+for them. The server uploads the profile to BRouter on first use (that's how
+brouter-web handles custom profiles too) and uploads it again if BRouter has
+dropped it. Set `BROUTER_PROFILE` to a built-in profile such as `trekking` to
+use that instead.
 
 Useful env vars (all optional): `SERVER_PORT`, `ROUTING_PROVIDER`,
 `BROUTER_PROFILE`, `OSRM_URL`, `ELEVATION_URL`, `SEED_RUNS`, `DB_PATH`.
@@ -97,4 +105,5 @@ Useful env vars (all optional): `SERVER_PORT`, `ROUTING_PROVIDER`,
 |-------------------|-----------------------------------------------|
 | `npm run dev`     | Run client + server together                  |
 | `npm run seed`    | Insert synthetic Boston runs                  |
+| `npm test`        | Run the server tests                          |
 | `npm run build`   | Type-check + build both workspaces            |
