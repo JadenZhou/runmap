@@ -63,7 +63,11 @@ describe("saved routes", () => {
       [-71.06, 42.36],
       [-71.062, 42.362],
     ];
-    const saved = await app.inject({ method: "POST", url: "/api/routes", payload: { ...ROUTE, waypoints } });
+    const saved = await app.inject({
+      method: "POST",
+      url: "/api/routes",
+      payload: { ...ROUTE, waypoints },
+    });
     assert.equal(saved.statusCode, 201);
 
     const got = await app.inject({ method: "GET", url: `/api/routes/${saved.json().id}` });
@@ -93,6 +97,9 @@ describe("saved routes", () => {
     const got = await app.inject({ method: "GET", url: `/api/routes/${oldRoute.id}` });
     assert.equal(got.statusCode, 200);
     assert.equal(got.json().waypoints, null);
-    assert.deepEqual(got.json().coordinates, [[0, 0], [0, 0.001]]);
+    assert.deepEqual(got.json().coordinates, [
+      [0, 0],
+      [0, 0.001],
+    ]);
   });
 });

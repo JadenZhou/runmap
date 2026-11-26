@@ -65,9 +65,8 @@ export async function savedRoutesRoutes(app: FastifyInstance): Promise<void> {
 
   // Get one route with full geometry + elevation profile.
   app.get<{ Params: { id: string } }>("/api/routes/:id", async (req, reply) => {
-    const row = db
-      .prepare("SELECT * FROM routes WHERE id = ?")
-      .get(req.params.id) as RouteRow | undefined;
+    const row = db.prepare("SELECT * FROM routes WHERE id = ?").get(req.params.id) as
+      RouteRow | undefined;
     if (!row) return reply.code(404).send({ error: "Not found" });
     return {
       id: row.id,
@@ -89,9 +88,8 @@ export async function savedRoutesRoutes(app: FastifyInstance): Promise<void> {
 
   // Export a route as a downloadable GPX file.
   app.get<{ Params: { id: string } }>("/api/routes/:id/gpx", async (req, reply) => {
-    const row = db
-      .prepare("SELECT * FROM routes WHERE id = ?")
-      .get(req.params.id) as RouteRow | undefined;
+    const row = db.prepare("SELECT * FROM routes WHERE id = ?").get(req.params.id) as
+      RouteRow | undefined;
     if (!row) return reply.code(404).send({ error: "Not found" });
 
     const coords = JSON.parse(row.geometry_json) as LngLat[];

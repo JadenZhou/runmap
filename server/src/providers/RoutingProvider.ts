@@ -19,19 +19,43 @@ const USER_AGENT = "RunMap/1.0 (self-hosted demo)";
 
 /** A non-2xx answer from an upstream service (as opposed to a timeout). */
 export class UpstreamError extends Error {
-  constructor(readonly status: number, statusText: string) {
+  constructor(
+    readonly status: number,
+    statusText: string,
+  ) {
     super(`Upstream ${status} ${statusText}`);
   }
 }
 
-async function fetchJson(url: string, init: RequestInit = {}): Promise<any> {
+/** The parts of BRouter's GeoJSON answer that we read. */
+interface BRouterTrack {
+  features?: {
+    properties?: { "track-length"?: string };
+    geometry?: { coordinates?: number[][] };
+  }[];
+}
+
+/** BRouter's answer to a profile upload. */
+interface BRouterUpload {
+  profileid?: string;
+  error?: string;
+}
+
+/** The parts of OSRM's answer that we read. */
+interface OsrmRoute {
+  code?: string;
+  routes?: { distance?: number; geometry?: { coordinates?: number[][] } }[];
+}
+
+/** Fetch JSON. `T` describes what we expect back; it isn't checked at runtime. */
+async function fetchJson<T>(url: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(url, {
     ...init,
     signal: AbortSignal.timeout(TIMEOUT_MS),
     headers: { "User-Agent": USER_AGENT, ...init.headers },
   });
   if (!res.ok) throw new UpstreamError(res.status, res.statusText);
-  return res.json();
+  return (await res.json()) as T;
 }
 
 /** Profiles that ship with RunMap, as server/profiles/<name>.brf. */
@@ -96,7 +120,7 @@ export class BRouterProvider implements RoutingProvider {
 
   private async uploadProfile(): Promise<string> {
     const text = await this.loadProfile(this.profile);
-    const json = await fetchJson(`${this.base}/profile`, {
+    const json = await fetchJson<BRouterUpload>(`${this.base}/profile`, {
       method: "POST",
       body: text,
       headers: { "Content-Type": "text/plain" },
@@ -111,9 +135,9 @@ export class BRouterProvider implements RoutingProvider {
   private async request(waypoints: LngLat[], profile: string): Promise<RoutingResult> {
     const lonlats = waypoints.map(([lon, lat]) => `${lon},${lat}`).join("|");
     const url = `${this.base}?lonlats=${encodeURIComponent(lonlats)}&profile=${encodeURIComponent(profile)}&alternativeidx=0&format=geojson`;
-    const json = await fetchJson(url);
+    const json = await fetchJson<BRouterTrack>(url);
     const feature = json?.features?.[0];
-    const coords = feature?.geometry?.coordinates as number[][] | undefined;
+    const coords = feature?.geometry?.coordinates;
     if (!coords?.length) throw new Error("BRouter returned no geometry");
 
     const coordinates = coords.map((c) => [c[0], c[1]] as LngLat);
@@ -137,16 +161,18 @@ class OsrmProvider implements RoutingProvider {
   async route(waypoints: LngLat[]): Promise<RoutingResult> {
     const coordsParam = waypoints.map(([lon, lat]) => `${lon},${lat}`).join(";");
     const url = `${this.base}/route/v1/${this.profile}/${coordsParam}?overview=full&geometries=geojson`;
-    const json = await fetchJson(url);
+    const json = await fetchJson<OsrmRoute>(url);
     if (json?.code !== "Ok") throw new Error(`OSRM error: ${json?.code ?? "unknown"}`);
     const route = json.routes?.[0];
-    const coords = route?.geometry?.coordinates as number[][] | undefined;
+    const coords = route?.geometry?.coordinates;
     if (!coords?.length) throw new Error("OSRM returned no geometry");
 
     const coordinates = coords.map((c) => [c[0], c[1]] as LngLat);
-    const distance_m = Number.isFinite(route.distance)
-      ? route.distance
-      : lineDistance(coordinates);
+    const reported = route?.distance;
+    const distance_m =
+      typeof reported === "number" && Number.isFinite(reported)
+        ? reported
+        : lineDistance(coordinates);
     return { coordinates, distance_m, provider: this.name };
   }
 }

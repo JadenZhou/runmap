@@ -21,6 +21,7 @@ export interface ParsedTrack {
 export function parseTrackFile(xml: string, filename = "upload"): ParsedTrack[] {
   // xmldom's Document stands in for the DOM Document togeojson expects; the
   // server has no DOM lib so we treat it structurally.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- see above
   const doc = new DOMParser().parseFromString(xml, "text/xml") as any;
   const root: string = doc.documentElement?.nodeName?.toLowerCase() ?? "";
   const isTcx = root.includes("trainingcenterdatabase") || /\.tcx$/i.test(filename);
@@ -36,8 +37,7 @@ export function parseTrackFile(xml: string, filename = "upload"): ParsedTrack[] 
     const props = (feature.properties ?? {}) as Record<string, unknown>;
     const coordProps = (props.coordinateProperties ?? {}) as Record<string, unknown>;
     const segName =
-      (typeof props.name === "string" && props.name) ||
-      filename.replace(/\.(gpx|tcx)$/i, "");
+      (typeof props.name === "string" && props.name) || filename.replace(/\.(gpx|tcx)$/i, "");
 
     const lineStrings: number[][][] =
       geom.type === "LineString"

@@ -13,9 +13,20 @@
     "dev:client": "npm -w client run dev",
     "seed": "npm -w server run seed",
     "test": "npm -w server run test",
-    "build": "npm -w server run build && npm -w client run build"
+    "build": "npm -w server run build && npm -w client run build",
+    "typecheck": "tsc --noEmit -p server/tsconfig.json && tsc --noEmit -p client/tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run lint && npm run format:check && npm run typecheck && npm test && npm run build"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0"
+    "@eslint/js": "^10.0.1",
+    "concurrently": "^9.1.0",
+    "eslint": "^10.15.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "typescript-eslint": "^8.74.0"
   }
 }
