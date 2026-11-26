@@ -63,7 +63,7 @@ export default function App() {
   useEffect(() => {
     if (waypoints.length < 2) {
       // Resetting request state from this effect is deliberate for now; moving
-      // it out is tracked in an issue (see ROADMAP.md, "Cleanup").
+      // it out is tracked in #12.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setPreview(null);
       setRouteError(null);
