@@ -59,12 +59,18 @@ export default function MapView({
           "interpolate",
           ["linear"],
           ["heatmap-density"],
-          0, "rgba(0,0,255,0)",
-          0.2, "rgba(0,128,255,0.6)",
-          0.4, "rgba(0,255,170,0.7)",
-          0.6, "rgba(180,255,0,0.8)",
-          0.8, "rgba(255,150,0,0.9)",
-          1, "rgba(255,40,0,1)",
+          0,
+          "rgba(0,0,255,0)",
+          0.2,
+          "rgba(0,128,255,0.6)",
+          0.4,
+          "rgba(0,255,170,0.7)",
+          0.6,
+          "rgba(180,255,0,0.8)",
+          0.8,
+          "rgba(255,150,0,0.9)",
+          1,
+          "rgba(255,40,0,1)",
         ],
       },
     }),
@@ -157,10 +163,7 @@ export default function MapView({
           // clicking a waypoint shouldn't also drop a new point via the map
           onClick={(e) => e.originalEvent.stopPropagation()}
         >
-          <div
-            className={`waypoint ${i === 0 ? "start" : ""}`}
-            title="Drag to move"
-          >
+          <div className={`waypoint ${i === 0 ? "start" : ""}`} title="Drag to move">
             {i + 1}
             <button
               type="button"

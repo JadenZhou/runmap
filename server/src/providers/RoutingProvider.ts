@@ -19,7 +19,10 @@ const USER_AGENT = "RunMap/1.0 (self-hosted demo)";
 
 /** A non-2xx answer from an upstream service (as opposed to a timeout). */
 export class UpstreamError extends Error {
-  constructor(readonly status: number, statusText: string) {
+  constructor(
+    readonly status: number,
+    statusText: string,
+  ) {
     super(`Upstream ${status} ${statusText}`);
   }
 }

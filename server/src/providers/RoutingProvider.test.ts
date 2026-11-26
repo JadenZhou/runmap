@@ -14,7 +14,12 @@ const TRACK = {
   features: [
     {
       properties: { "track-length": "1640" },
-      geometry: { coordinates: [[-71.0776, 42.3499, 10], [-71.0952, 42.3488, 12]] },
+      geometry: {
+        coordinates: [
+          [-71.0776, 42.3499, 10],
+          [-71.0952, 42.3488, 12],
+        ],
+      },
     },
   ],
 };
@@ -54,16 +59,17 @@ describe("BRouterProvider with the local running profile", () => {
     });
 
   it("uploads the profile once and routes with the id BRouter returns", async () => {
-    mockFetch((url) =>
-      url.endsWith("/profile") ? json({ profileid: "custom_1" }) : json(TRACK),
-    );
+    mockFetch((url) => (url.endsWith("/profile") ? json({ profileid: "custom_1" }) : json(TRACK)));
     const p = provider();
     const first = await p.route(WAYPOINTS);
     await p.route(WAYPOINTS);
 
     assert.equal(uploadCalls().length, 1);
     assert.equal(uploadCalls()[0].init?.body, "---context:global\n");
-    assert.deepEqual(routeCalls().map((c) => profileParam(c.url)), ["custom_1", "custom_1"]);
+    assert.deepEqual(
+      routeCalls().map((c) => profileParam(c.url)),
+      ["custom_1", "custom_1"],
+    );
     assert.equal(first.distance_m, 1640);
     assert.deepEqual(first.coordinates[0], [-71.0776, 42.3499]); // elevation dropped
   });
@@ -78,12 +84,17 @@ describe("BRouterProvider with the local running profile", () => {
     const result = await provider().route(WAYPOINTS);
 
     assert.equal(result.distance_m, 1640);
-    assert.deepEqual(routeCalls().map((c) => profileParam(c.url)), ["custom_1", "custom_2"]);
+    assert.deepEqual(
+      routeCalls().map((c) => profileParam(c.url)),
+      ["custom_1", "custom_2"],
+    );
   });
 
   it("gives up after one retry", async () => {
     mockFetch((url) =>
-      url.endsWith("/profile") ? json({ profileid: "custom_1" }) : new Response("", { status: 500 }),
+      url.endsWith("/profile")
+        ? json({ profileid: "custom_1" })
+        : new Response("", { status: 500 }),
     );
     await assert.rejects(provider().route(WAYPOINTS), /Upstream 500/);
     assert.equal(routeCalls().length, 2);
@@ -91,7 +102,9 @@ describe("BRouterProvider with the local running profile", () => {
 
   it("does not retry other upstream errors", async () => {
     mockFetch((url) =>
-      url.endsWith("/profile") ? json({ profileid: "custom_1" }) : new Response("", { status: 503 }),
+      url.endsWith("/profile")
+        ? json({ profileid: "custom_1" })
+        : new Response("", { status: 503 }),
     );
     await assert.rejects(provider().route(WAYPOINTS), /Upstream 503/);
     assert.equal(routeCalls().length, 1);

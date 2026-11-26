@@ -53,7 +53,10 @@ export class LegRouter {
       coordinates,
       distance_m: legs.reduce((sum, l) => sum + l.distance_m, 0),
       provider: legs[0].provider,
-      snapped: [legs[0].coordinates[0], ...legs.map((l) => l.coordinates[l.coordinates.length - 1])],
+      snapped: [
+        legs[0].coordinates[0],
+        ...legs.map((l) => l.coordinates[l.coordinates.length - 1]),
+      ],
       legs: legs.map((l) => ({
         distance_m: Math.round(l.distance_m),
         midpoint: pointAlong(l.coordinates, lineDistance(l.coordinates) / 2),

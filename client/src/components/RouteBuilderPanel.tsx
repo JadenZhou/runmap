@@ -54,34 +54,24 @@ export default function RouteBuilderPanel(props: Props) {
       </div>
 
       <label className="switch">
-        <input
-          type="checkbox"
-          checked={props.buildMode}
-          onChange={props.onToggleBuildMode}
-        />
+        <input type="checkbox" checked={props.buildMode} onChange={props.onToggleBuildMode} />
         Build mode {props.buildMode ? "(click map to add points)" : "(panning)"}
       </label>
 
       <div className="stats">
         <div>
           <span className="stat-label">Distance</span>
-          <span className="stat-value">
-            {formatDistance(props.distanceM, props.units)}
-          </span>
+          <span className="stat-value">{formatDistance(props.distanceM, props.units)}</span>
         </div>
         <div>
           <span className="stat-label">Elevation gain</span>
-          <span className="stat-value">
-            {formatElevation(props.elevationGainM, props.units)}
-          </span>
+          <span className="stat-value">{formatElevation(props.elevationGainM, props.units)}</span>
         </div>
       </div>
 
       {props.loading && <p className="hint">Snapping route…</p>}
       {props.error && <p className="error">{props.error}</p>}
-      {props.provider && !props.error && (
-        <p className="hint">snapped via {props.provider}</p>
-      )}
+      {props.provider && !props.error && <p className="hint">snapped via {props.provider}</p>}
 
       <ElevationChart
         profile={props.profile}

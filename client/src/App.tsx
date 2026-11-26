@@ -4,21 +4,8 @@ import RouteBuilderPanel from "./components/RouteBuilderPanel";
 import HeatmapControls from "./components/HeatmapControls";
 import SavedRoutesList from "./components/SavedRoutesList";
 import UploadButton from "./components/UploadButton";
-import {
-  deleteRoute,
-  getHeatmap,
-  getRoute,
-  listRoutes,
-  previewRoute,
-  saveRoute,
-} from "./api";
-import type {
-  HeatmapData,
-  LngLat,
-  RoutePreview,
-  SavedRoute,
-  SavedRouteSummary,
-} from "./types";
+import { deleteRoute, getHeatmap, getRoute, listRoutes, previewRoute, saveRoute } from "./api";
+import type { HeatmapData, LngLat, RoutePreview, SavedRoute, SavedRouteSummary } from "./types";
 import type { Units } from "./units";
 
 // Heatmap is stashed for now — flip to true to bring its panel, upload, and
@@ -56,7 +43,9 @@ export default function App() {
   const [to, setTo] = useState("");
 
   const refreshSaved = useCallback(() => {
-    listRoutes().then(setSaved).catch(() => setSaved([]));
+    listRoutes()
+      .then(setSaved)
+      .catch(() => setSaved([]));
   }, []);
 
   const refreshHeatmap = useCallback((f?: string, t?: string) => {
@@ -182,8 +171,7 @@ export default function App() {
   // handles halfway along each leg's path. Until the next preview arrives, a
   // waypoint that changed is drawn where it was placed, and the handles next
   // to it are hidden.
-  const fresh = (i: number) =>
-    !!preview && !!previewFor && samePoint(previewFor[i], waypoints[i]);
+  const fresh = (i: number) => !!preview && !!previewFor && samePoint(previewFor[i], waypoints[i]);
   const markerPositions = waypoints.map((wp, i) =>
     fresh(i) && preview?.snapped[i] ? preview.snapped[i] : wp,
   );
@@ -242,9 +230,7 @@ export default function App() {
           savedRouteId={currentSavedId}
           canSave={!!preview && !loadingRoute}
           units={units}
-          onToggleUnits={() =>
-            setUnits((u) => (u === "imperial" ? "metric" : "imperial"))
-          }
+          onToggleUnits={() => setUnits((u) => (u === "imperial" ? "metric" : "imperial"))}
           onUndo={undo}
           onClear={clear}
           onSave={handleSave}

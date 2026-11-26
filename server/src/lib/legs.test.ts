@@ -35,7 +35,10 @@ describe("LegRouter", () => {
     const { router, calls } = fakeRouter();
     const r = await new LegRouter(router).route([A, B, C]);
 
-    assert.deepEqual(calls, [[A, B], [B, C]]);
+    assert.deepEqual(calls, [
+      [A, B],
+      [B, C],
+    ]);
     assert.equal(r.coordinates.length, 5); // 3 + 3, minus the shared snapped B
     assert.equal(r.distance_m, 2000);
     assert.equal(r.legs.length, 2);
@@ -68,7 +71,10 @@ describe("LegRouter", () => {
 
     const moved: LngLat = [C[0] + 0.001, C[1]];
     await legs.route([A, B, moved, D]);
-    assert.deepEqual(calls, [[B, moved], [moved, D]]);
+    assert.deepEqual(calls, [
+      [B, moved],
+      [moved, D],
+    ]);
   });
 
   it("doesn't cache a failed leg", async () => {

@@ -32,11 +32,7 @@ export default function HeatmapControls(props: Props) {
         </label>
         <label>
           To
-          <input
-            type="date"
-            value={props.to}
-            onChange={(e) => props.onToChange(e.target.value)}
-          />
+          <input type="date" value={props.to} onChange={(e) => props.onToChange(e.target.value)} />
         </label>
       </div>
 

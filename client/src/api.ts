@@ -1,10 +1,4 @@
-import type {
-  HeatmapData,
-  LngLat,
-  RoutePreview,
-  SavedRoute,
-  SavedRouteSummary,
-} from "./types";
+import type { HeatmapData, LngLat, RoutePreview, SavedRoute, SavedRouteSummary } from "./types";
 
 async function jsonOrThrow(res: Response) {
   if (!res.ok) {

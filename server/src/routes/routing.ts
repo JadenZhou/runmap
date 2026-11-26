@@ -14,10 +14,7 @@ export interface ElevationProfilePoint {
 }
 
 /** Evenly sample up to `max` points along a polyline, with cumulative distance. */
-function sampleWithDistance(
-  coords: LngLat[],
-  max = 100,
-): { coord: LngLat; dist_m: number }[] {
+function sampleWithDistance(coords: LngLat[], max = 100): { coord: LngLat; dist_m: number }[] {
   const cum: number[] = [0];
   for (let i = 1; i < coords.length; i++) {
     cum.push(cum[i - 1] + haversine(coords[i - 1], coords[i]));

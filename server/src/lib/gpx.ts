@@ -37,8 +37,7 @@ export function parseTrackFile(xml: string, filename = "upload"): ParsedTrack[] 
     const props = (feature.properties ?? {}) as Record<string, unknown>;
     const coordProps = (props.coordinateProperties ?? {}) as Record<string, unknown>;
     const segName =
-      (typeof props.name === "string" && props.name) ||
-      filename.replace(/\.(gpx|tcx)$/i, "");
+      (typeof props.name === "string" && props.name) || filename.replace(/\.(gpx|tcx)$/i, "");
 
     const lineStrings: number[][][] =
       geom.type === "LineString"
