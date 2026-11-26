@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import { lineDistance, type LngLat } from "../lib/geo";
 
 export interface RoutingResult {
@@ -14,29 +15,102 @@ export interface RoutingProvider {
 }
 
 const TIMEOUT_MS = Number(process.env.ROUTING_TIMEOUT_MS ?? 12000);
+const USER_AGENT = "RunMap/1.0 (self-hosted demo)";
 
-async function fetchJson(url: string): Promise<any> {
+/** A non-2xx answer from an upstream service (as opposed to a timeout). */
+export class UpstreamError extends Error {
+  constructor(readonly status: number, statusText: string) {
+    super(`Upstream ${status} ${statusText}`);
+  }
+}
+
+async function fetchJson(url: string, init: RequestInit = {}): Promise<any> {
   const res = await fetch(url, {
+    ...init,
     signal: AbortSignal.timeout(TIMEOUT_MS),
-    headers: { "User-Agent": "RunMap/1.0 (self-hosted demo)" },
+    headers: { "User-Agent": USER_AGENT, ...init.headers },
   });
-  if (!res.ok) throw new Error(`Upstream ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new UpstreamError(res.status, res.statusText);
   return res.json();
+}
+
+/** Profiles that ship with RunMap, as server/profiles/<name>.brf. */
+const LOCAL_PROFILES = new Set(["running"]);
+
+async function readLocalProfile(name: string): Promise<string> {
+  return readFile(new URL(`../../profiles/${name}.brf`, import.meta.url), "utf8");
 }
 
 /**
  * BRouter public server — keyless, supports true pedestrian/foot profiles
  * (follows sidewalks and trails, not just drivable roads). Default provider.
  * Docs: https://brouter.de/brouter-web/
+ *
+ * The default profile, `running`, is RunMap's own (server/profiles/running.brf).
+ * BRouter doesn't know it, so it's uploaded on first use, the same way
+ * brouter-web handles custom profiles. BRouter answers with a "custom_<n>" id
+ * to route with. Set BROUTER_PROFILE to use one of BRouter's built-in profiles
+ * (e.g. hiking-beta, trekking) instead.
  */
-class BRouterProvider implements RoutingProvider {
+export class BRouterProvider implements RoutingProvider {
   readonly name = "brouter";
-  private profile = process.env.BROUTER_PROFILE ?? "hiking-beta";
-  private base = process.env.BROUTER_URL ?? "https://brouter.de/brouter";
+  private readonly profile: string;
+  private readonly base: string;
+  private readonly loadProfile: (name: string) => Promise<string>;
+  /** Pending or finished upload of a local profile, resolving to its custom id. */
+  private uploaded: Promise<string> | null = null;
+
+  constructor(
+    opts: {
+      profile?: string;
+      base?: string;
+      loadProfile?: (name: string) => Promise<string>;
+    } = {},
+  ) {
+    this.profile = opts.profile ?? process.env.BROUTER_PROFILE ?? "running";
+    this.base = opts.base ?? process.env.BROUTER_URL ?? "https://brouter.de/brouter";
+    this.loadProfile = opts.loadProfile ?? readLocalProfile;
+  }
 
   async route(waypoints: LngLat[]): Promise<RoutingResult> {
+    if (!LOCAL_PROFILES.has(this.profile)) return this.request(waypoints, this.profile);
+    try {
+      return await this.request(waypoints, await this.customProfileId());
+    } catch (err) {
+      // Uploaded profiles don't live forever on the public server. Routing with
+      // an id it no longer has gets a bare HTTP 500, so upload again and retry
+      // once. Timeouts and other failures aren't retried.
+      if (!(err instanceof UpstreamError) || err.status !== 500) throw err;
+      this.uploaded = null;
+      return this.request(waypoints, await this.customProfileId());
+    }
+  }
+
+  private customProfileId(): Promise<string> {
+    this.uploaded ??= this.uploadProfile().catch((err) => {
+      this.uploaded = null; // let the next request try again
+      throw err;
+    });
+    return this.uploaded;
+  }
+
+  private async uploadProfile(): Promise<string> {
+    const text = await this.loadProfile(this.profile);
+    const json = await fetchJson(`${this.base}/profile`, {
+      method: "POST",
+      body: text,
+      headers: { "Content-Type": "text/plain" },
+    });
+    // BRouter returns an id even for a profile it can't parse, plus an error.
+    if (json?.error || typeof json?.profileid !== "string") {
+      throw new Error(`BRouter rejected profile "${this.profile}": ${json?.error ?? "no id"}`);
+    }
+    return json.profileid;
+  }
+
+  private async request(waypoints: LngLat[], profile: string): Promise<RoutingResult> {
     const lonlats = waypoints.map(([lon, lat]) => `${lon},${lat}`).join("|");
-    const url = `${this.base}?lonlats=${encodeURIComponent(lonlats)}&profile=${this.profile}&alternativeidx=0&format=geojson`;
+    const url = `${this.base}?lonlats=${encodeURIComponent(lonlats)}&profile=${encodeURIComponent(profile)}&alternativeidx=0&format=geojson`;
     const json = await fetchJson(url);
     const feature = json?.features?.[0];
     const coords = feature?.geometry?.coordinates as number[][] | undefined;

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "seed": "tsx src/seed.ts --run",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js"
