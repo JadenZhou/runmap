@@ -19,6 +19,11 @@ import type {
   SavedRoute,
   SavedRouteSummary,
 } from "./types";
+import type { Units } from "./units";
+
+// Heatmap is stashed for now — flip to true to bring its panel, upload, and
+// map layer back. Back-end (/api/heatmap, /api/activities/upload) is untouched.
+const SHOW_HEATMAP = false;
 
 export default function App() {
   // --- route builder state ---
@@ -34,7 +39,15 @@ export default function App() {
   // --- saved routes ---
   const [saved, setSaved] = useState<SavedRouteSummary[]>([]);
 
-  // --- heatmap ---
+  // --- units (persisted) ---
+  const [units, setUnits] = useState<Units>(
+    () => (localStorage.getItem("runmap-units") as Units) || "imperial",
+  );
+  useEffect(() => {
+    localStorage.setItem("runmap-units", units);
+  }, [units]);
+
+  // --- heatmap (stashed; see SHOW_HEATMAP) ---
   const [heatmap, setHeatmap] = useState<HeatmapData | null>(null);
   const [heatmapVisible, setHeatmapVisible] = useState(true);
   const [from, setFrom] = useState("");
@@ -52,7 +65,7 @@ export default function App() {
 
   useEffect(() => {
     refreshSaved();
-    refreshHeatmap();
+    if (SHOW_HEATMAP) refreshHeatmap();
   }, [refreshSaved, refreshHeatmap]);
 
   // Snap the route whenever the waypoints change (>= 2).
@@ -93,6 +106,16 @@ export default function App() {
     setLoadedRoute(null);
     setCurrentSavedId(null);
     setWaypoints((w) => w.map((wp, idx) => (idx === i ? p : wp)));
+  };
+  const deleteWaypoint = (i: number) => {
+    setLoadedRoute(null);
+    setCurrentSavedId(null);
+    setWaypoints((w) => w.filter((_, idx) => idx !== i));
+  };
+  const insertWaypoint = (i: number, p: LngLat) => {
+    setLoadedRoute(null);
+    setCurrentSavedId(null);
+    setWaypoints((w) => [...w.slice(0, i), p, ...w.slice(i)]);
   };
   const undo = () => {
     setCurrentSavedId(null);
@@ -176,7 +199,7 @@ export default function App() {
       <aside className="sidebar">
         <header className="brand">
           <h1>🏃 RunMap</h1>
-          <p>Build running routes · explore the activity heatmap</p>
+          <p>Build running routes · click to place, drag to move</p>
         </header>
 
         <RouteBuilderPanel
@@ -192,32 +215,40 @@ export default function App() {
           provider={display.provider}
           savedRouteId={currentSavedId}
           canSave={!!preview && !loadingRoute}
+          units={units}
+          onToggleUnits={() =>
+            setUnits((u) => (u === "imperial" ? "metric" : "imperial"))
+          }
           onUndo={undo}
           onClear={clear}
           onSave={handleSave}
         />
 
-        <HeatmapControls
-          visible={heatmapVisible}
-          onToggle={() => setHeatmapVisible((v) => !v)}
-          from={from}
-          to={to}
-          onFromChange={setFrom}
-          onToChange={setTo}
-          onApply={() => refreshHeatmap(from, to)}
-          onReset={() => {
-            setFrom("");
-            setTo("");
-            refreshHeatmap();
-          }}
-          cells={heatmap?.cells ?? null}
-        />
-
-        <UploadButton onUploaded={() => refreshHeatmap(from, to)} />
+        {SHOW_HEATMAP && (
+          <>
+            <HeatmapControls
+              visible={heatmapVisible}
+              onToggle={() => setHeatmapVisible((v) => !v)}
+              from={from}
+              to={to}
+              onFromChange={setFrom}
+              onToChange={setTo}
+              onApply={() => refreshHeatmap(from, to)}
+              onReset={() => {
+                setFrom("");
+                setTo("");
+                refreshHeatmap();
+              }}
+              cells={heatmap?.cells ?? null}
+            />
+            <UploadButton onUploaded={() => refreshHeatmap(from, to)} />
+          </>
+        )}
 
         <SavedRoutesList
           routes={saved}
           activeId={currentSavedId}
+          units={units}
           onOpen={openRoute}
           onDelete={removeRoute}
         />
@@ -227,11 +258,13 @@ export default function App() {
         <MapView
           waypoints={waypoints}
           routeCoordinates={display.coords}
-          heatmap={heatmap}
+          heatmap={SHOW_HEATMAP ? heatmap : null}
           heatmapVisible={heatmapVisible}
           buildMode={buildMode}
           onAddWaypoint={addWaypoint}
           onMoveWaypoint={moveWaypoint}
+          onDeleteWaypoint={deleteWaypoint}
+          onInsertWaypoint={insertWaypoint}
         />
       </main>
     </div>

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import Map, { Source, Layer, Marker, NavigationControl } from "react-map-gl/maplibre";
 import type { LayerProps, MapLayerMouseEvent } from "react-map-gl/maplibre";
 import "maplibre-gl/dist/maplibre-gl.css";
@@ -16,6 +16,8 @@ interface Props {
   buildMode: boolean;
   onAddWaypoint: (lngLat: LngLat) => void;
   onMoveWaypoint: (index: number, lngLat: LngLat) => void;
+  onDeleteWaypoint: (index: number) => void;
+  onInsertWaypoint: (index: number, lngLat: LngLat) => void;
 }
 
 export default function MapView({
@@ -26,8 +28,24 @@ export default function MapView({
   buildMode,
   onAddWaypoint,
   onMoveWaypoint,
+  onDeleteWaypoint,
+  onInsertWaypoint,
 }: Props) {
   const maxWeight = heatmap?.maxWeight ?? 1;
+  // Distinguishes a real click (delete) from the click that fires at the end
+  // of a drag (move) on the same marker.
+  const draggedRef = useRef(false);
+
+  // Geometric midpoints between consecutive waypoints, used for "+" insert handles.
+  const midpoints = useMemo(() => {
+    const out: { index: number; lng: number; lat: number }[] = [];
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const a = waypoints[i];
+      const b = waypoints[i + 1];
+      out.push({ index: i + 1, lng: (a[0] + b[0]) / 2, lat: (a[1] + b[1]) / 2 });
+    }
+    return out;
+  }, [waypoints]);
 
   const heatLayer: LayerProps = useMemo(
     () => ({
@@ -98,6 +116,38 @@ export default function MapView({
         </Source>
       )}
 
+      {/* Midpoint "+" handles: drag to bend, click to insert at the midpoint. */}
+      {buildMode &&
+        midpoints.map((mp) => (
+          <Marker
+            key={`mid-${mp.index}`}
+            longitude={mp.lng}
+            latitude={mp.lat}
+            draggable
+            onDragStart={() => {
+              draggedRef.current = true;
+            }}
+            onDragEnd={(e) => {
+              onInsertWaypoint(mp.index, [e.lngLat.lng, e.lngLat.lat]);
+              setTimeout(() => (draggedRef.current = false), 0);
+            }}
+            onClick={(e) => {
+              // Marker clicks bubble to maplibre's canvas click, which would
+              // also drop a waypoint via the map's onClick — stop it.
+              e.originalEvent.stopPropagation();
+              if (draggedRef.current) {
+                draggedRef.current = false;
+                return;
+              }
+              onInsertWaypoint(mp.index, [mp.lng, mp.lat]);
+            }}
+          >
+            <div className="midpoint" title="Drag to bend · click to insert">
+              +
+            </div>
+          </Marker>
+        ))}
+
       {waypoints.map((wp, i) => (
         <Marker
           key={i}
@@ -105,8 +155,30 @@ export default function MapView({
           latitude={wp[1]}
           draggable
           onDragEnd={(e) => onMoveWaypoint(i, [e.lngLat.lng, e.lngLat.lat])}
+          // clicking a waypoint shouldn't also drop a new point via the map
+          onClick={(e) => e.originalEvent.stopPropagation()}
         >
-          <div className={`waypoint ${i === 0 ? "start" : ""}`}>{i + 1}</div>
+          <div
+            className={`waypoint ${i === 0 ? "start" : ""}`}
+            title="Drag to move"
+          >
+            {i + 1}
+            <button
+              type="button"
+              className="wp-delete"
+              title="Delete this point"
+              aria-label={`Delete waypoint ${i + 1}`}
+              // stop the marker from starting a drag when grabbing the ×
+              onMouseDown={(ev) => ev.stopPropagation()}
+              onTouchStart={(ev) => ev.stopPropagation()}
+              onClick={(ev) => {
+                ev.stopPropagation();
+                onDeleteWaypoint(i);
+              }}
+            >
+              ×
+            </button>
+          </div>
         </Marker>
       ))}
     </Map>

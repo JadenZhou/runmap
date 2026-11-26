@@ -2,6 +2,7 @@ import { useState } from "react";
 import ElevationChart from "./ElevationChart";
 import { routeGpxUrl } from "../api";
 import type { ElevationProfilePoint } from "../types";
+import { formatDistance, formatElevation, type Units } from "../units";
 
 interface Props {
   buildMode: boolean;
@@ -16,14 +17,11 @@ interface Props {
   provider?: string;
   savedRouteId: number | null;
   canSave: boolean;
+  units: Units;
+  onToggleUnits: () => void;
   onUndo: () => void;
   onClear: () => void;
   onSave: (name: string) => void;
-}
-
-function fmtKm(m: number | null): string {
-  if (m == null) return "—";
-  return `${(m / 1000).toFixed(2)} km`;
 }
 
 export default function RouteBuilderPanel(props: Props) {
@@ -37,7 +35,23 @@ export default function RouteBuilderPanel(props: Props) {
 
   return (
     <section className="panel">
-      <h2>Route builder</h2>
+      <div className="panel-head">
+        <h2>Route builder</h2>
+        <div className="unit-toggle" role="group" aria-label="Units">
+          <button
+            className={props.units === "imperial" ? "active" : ""}
+            onClick={() => props.units !== "imperial" && props.onToggleUnits()}
+          >
+            mi
+          </button>
+          <button
+            className={props.units === "metric" ? "active" : ""}
+            onClick={() => props.units !== "metric" && props.onToggleUnits()}
+          >
+            km
+          </button>
+        </div>
+      </div>
 
       <label className="switch">
         <input
@@ -51,12 +65,14 @@ export default function RouteBuilderPanel(props: Props) {
       <div className="stats">
         <div>
           <span className="stat-label">Distance</span>
-          <span className="stat-value">{fmtKm(props.distanceM)}</span>
+          <span className="stat-value">
+            {formatDistance(props.distanceM, props.units)}
+          </span>
         </div>
         <div>
           <span className="stat-label">Elevation gain</span>
           <span className="stat-value">
-            {props.elevationGainM == null ? "—" : `${props.elevationGainM} m`}
+            {formatElevation(props.elevationGainM, props.units)}
           </span>
         </div>
       </div>
@@ -67,7 +83,11 @@ export default function RouteBuilderPanel(props: Props) {
         <p className="hint">snapped via {props.provider}</p>
       )}
 
-      <ElevationChart profile={props.profile} degraded={props.elevationDegraded} />
+      <ElevationChart
+        profile={props.profile}
+        degraded={props.elevationDegraded}
+        units={props.units}
+      />
 
       <div className="btn-row">
         <button onClick={props.onUndo} disabled={props.waypointCount === 0}>

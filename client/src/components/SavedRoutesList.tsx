@@ -1,13 +1,21 @@
 import type { SavedRouteSummary } from "../types";
+import { formatDistance, formatElevation, type Units } from "../units";
 
 interface Props {
   routes: SavedRouteSummary[];
   activeId: number | null;
+  units: Units;
   onOpen: (id: number) => void;
   onDelete: (id: number) => void;
 }
 
-export default function SavedRoutesList({ routes, activeId, onOpen, onDelete }: Props) {
+export default function SavedRoutesList({
+  routes,
+  activeId,
+  units,
+  onOpen,
+  onDelete,
+}: Props) {
   return (
     <section className="panel">
       <h2>Saved routes ({routes.length})</h2>
@@ -18,7 +26,8 @@ export default function SavedRoutesList({ routes, activeId, onOpen, onDelete }: 
             <button className="route-open" onClick={() => onOpen(r.id)}>
               <strong>{r.name}</strong>
               <span className="hint">
-                {(r.distance_m / 1000).toFixed(2)} km · {r.elevation_gain_m} m gain
+                {formatDistance(r.distance_m, units)} ·{" "}
+                {formatElevation(r.elevation_gain_m, units)} gain
               </span>
             </button>
             <button

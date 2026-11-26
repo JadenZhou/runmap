@@ -7,13 +7,21 @@ import {
   YAxis,
 } from "recharts";
 import type { ElevationProfilePoint } from "../types";
+import {
+  distanceUnitLabel,
+  distanceValue,
+  elevationUnitLabel,
+  elevationValue,
+  type Units,
+} from "../units";
 
 interface Props {
   profile: ElevationProfilePoint[];
   degraded?: boolean;
+  units: Units;
 }
 
-export default function ElevationChart({ profile, degraded }: Props) {
+export default function ElevationChart({ profile, degraded, units }: Props) {
   if (degraded || profile.length === 0) {
     return (
       <div className="elev-empty">
@@ -22,9 +30,11 @@ export default function ElevationChart({ profile, degraded }: Props) {
     );
   }
 
+  const distUnit = distanceUnitLabel(units);
+  const eleUnit = elevationUnitLabel(units);
   const data = profile.map((p) => ({
-    km: +(p.dist_m / 1000).toFixed(2),
-    ele: p.ele_m,
+    dist: +distanceValue(p.dist_m, units).toFixed(2),
+    ele: Math.round(elevationValue(p.ele_m, units)),
   }));
 
   return (
@@ -38,15 +48,15 @@ export default function ElevationChart({ profile, degraded }: Props) {
             </linearGradient>
           </defs>
           <XAxis
-            dataKey="km"
+            dataKey="dist"
             tick={{ fontSize: 10 }}
             tickFormatter={(v) => `${v}`}
             stroke="#888"
           />
-          <YAxis tick={{ fontSize: 10 }} stroke="#888" width={36} unit="m" />
+          <YAxis tick={{ fontSize: 10 }} stroke="#888" width={40} unit={eleUnit} />
           <Tooltip
-            formatter={(v: number) => [`${v} m`, "Elevation"]}
-            labelFormatter={(l) => `${l} km`}
+            formatter={(v: number) => [`${v} ${eleUnit}`, "Elevation"]}
+            labelFormatter={(l) => `${l} ${distUnit}`}
           />
           <Area
             type="monotone"

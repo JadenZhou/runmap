@@ -63,6 +63,34 @@ body,
   color: var(--muted);
 }
 
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.panel-head h2 {
+  margin: 0 0 10px;
+}
+
+.unit-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.unit-toggle button {
+  border: none;
+  border-radius: 0;
+  padding: 4px 10px;
+  font-size: 12px;
+  background: var(--panel-2);
+  color: var(--muted);
+}
+.unit-toggle button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
 .switch {
   display: flex;
   align-items: center;
@@ -213,7 +241,66 @@ input[type="file"] {
   border: 2px solid #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
   cursor: grab;
+  position: relative;
 }
 .waypoint.start {
   background: #16c784;
+}
+.waypoint:hover {
+  outline: 2px solid #fff;
+  outline-offset: 1px;
+  filter: brightness(1.1);
+}
+
+/* Hover-reveal delete badge on a waypoint */
+.wp-delete {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid #fff;
+  background: #e5484d;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+.waypoint:hover .wp-delete,
+.wp-delete:hover {
+  display: flex;
+}
+.wp-delete:hover {
+  filter: brightness(1.12);
+}
+
+/* Midpoint "+" insert handle */
+.midpoint {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(255, 122, 61, 0.65);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+  cursor: grab;
+  opacity: 0.65;
+  transition: opacity 0.12s, transform 0.12s;
+}
+.midpoint:hover {
+  opacity: 1;
+  transform: scale(1.25);
 }
