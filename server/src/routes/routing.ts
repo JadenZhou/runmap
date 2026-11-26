@@ -1,5 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { getRoutingProvider } from "../providers/RoutingProvider";
+import { LegRouter } from "../lib/legs";
 import { getElevationProvider } from "../providers/ElevationProvider";
 import { haversine, elevationGain, type LngLat } from "../lib/geo";
 
@@ -34,6 +35,8 @@ function sampleWithDistance(
 }
 
 export async function routingRoutes(app: FastifyInstance): Promise<void> {
+  const router = new LegRouter(getRoutingProvider());
+
   // Preview/build a route: snap waypoints + compute distance + elevation profile.
   app.post<{ Body: RouteBody }>("/api/route", async (req, reply) => {
     const waypoints = req.body?.waypoints;
@@ -41,10 +44,9 @@ export async function routingRoutes(app: FastifyInstance): Promise<void> {
       return reply.code(400).send({ error: "Need at least 2 waypoints" });
     }
 
-    const router = getRoutingProvider();
-    let snapped;
+    let routed;
     try {
-      snapped = await router.route(waypoints);
+      routed = await router.route(waypoints);
     } catch (err) {
       req.log.warn({ err }, "routing failed");
       return reply.code(502).send({
@@ -53,7 +55,7 @@ export async function routingRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Elevation profile (best-effort; degrades gracefully).
-    const samples = sampleWithDistance(snapped.coordinates, 100);
+    const samples = sampleWithDistance(routed.coordinates, 100);
     const elev = getElevationProvider();
     const { elevations, degraded } = await elev.lookup(samples.map((s) => s.coord));
 
@@ -68,9 +70,11 @@ export async function routingRoutes(app: FastifyInstance): Promise<void> {
     });
 
     return {
-      coordinates: snapped.coordinates,
-      distance_m: Math.round(snapped.distance_m),
-      provider: snapped.provider,
+      coordinates: routed.coordinates,
+      distance_m: Math.round(routed.distance_m),
+      provider: routed.provider,
+      snapped: routed.snapped,
+      legs: routed.legs,
       elevation: {
         profile,
         gain_m: Math.round(elevationGain(eleVals)),

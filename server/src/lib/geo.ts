@@ -42,3 +42,19 @@ export function elevationGain(eles: number[]): number {
   }
   return gain;
 }
+
+/** The point `target` meters along a polyline, clamped to its ends. */
+export function pointAlong(coords: LngLat[], target: number): LngLat {
+  let walked = 0;
+  for (let i = 1; i < coords.length; i++) {
+    const a = coords[i - 1];
+    const b = coords[i];
+    const seg = haversine(a, b);
+    if (walked + seg >= target) {
+      const t = seg === 0 ? 0 : Math.max(0, target - walked) / seg;
+      return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+    }
+    walked += seg;
+  }
+  return coords[coords.length - 1];
+}

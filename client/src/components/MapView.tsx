@@ -8,8 +8,17 @@ import type { HeatmapData, LngLat } from "../types";
 const MAP_STYLE = "https://tiles.openfreemap.org/styles/liberty";
 const BOSTON = { longitude: -71.0589, latitude: 42.3601, zoom: 12 };
 
+export interface InsertHandle {
+  /** Index the new waypoint gets when inserted. */
+  index: number;
+  position: LngLat;
+}
+
 interface Props {
+  /** Where to draw each waypoint (normally where it attached to the path). */
   waypoints: LngLat[];
+  /** "+" handles, one per leg, placed on the route line. */
+  insertHandles: InsertHandle[];
   routeCoordinates: LngLat[] | null;
   heatmap: HeatmapData | null;
   heatmapVisible: boolean;
@@ -22,6 +31,7 @@ interface Props {
 
 export default function MapView({
   waypoints,
+  insertHandles,
   routeCoordinates,
   heatmap,
   heatmapVisible,
@@ -35,17 +45,6 @@ export default function MapView({
   // Distinguishes a real click (delete) from the click that fires at the end
   // of a drag (move) on the same marker.
   const draggedRef = useRef(false);
-
-  // Geometric midpoints between consecutive waypoints, used for "+" insert handles.
-  const midpoints = useMemo(() => {
-    const out: { index: number; lng: number; lat: number }[] = [];
-    for (let i = 0; i < waypoints.length - 1; i++) {
-      const a = waypoints[i];
-      const b = waypoints[i + 1];
-      out.push({ index: i + 1, lng: (a[0] + b[0]) / 2, lat: (a[1] + b[1]) / 2 });
-    }
-    return out;
-  }, [waypoints]);
 
   const heatLayer: LayerProps = useMemo(
     () => ({
@@ -116,19 +115,19 @@ export default function MapView({
         </Source>
       )}
 
-      {/* Midpoint "+" handles: drag to bend, click to insert at the midpoint. */}
+      {/* "+" handles halfway along each leg: drag to bend, click to insert. */}
       {buildMode &&
-        midpoints.map((mp) => (
+        insertHandles.map((h) => (
           <Marker
-            key={`mid-${mp.index}`}
-            longitude={mp.lng}
-            latitude={mp.lat}
+            key={`mid-${h.index}`}
+            longitude={h.position[0]}
+            latitude={h.position[1]}
             draggable
             onDragStart={() => {
               draggedRef.current = true;
             }}
             onDragEnd={(e) => {
-              onInsertWaypoint(mp.index, [e.lngLat.lng, e.lngLat.lat]);
+              onInsertWaypoint(h.index, [e.lngLat.lng, e.lngLat.lat]);
               setTimeout(() => (draggedRef.current = false), 0);
             }}
             onClick={(e) => {
@@ -139,7 +138,7 @@ export default function MapView({
                 draggedRef.current = false;
                 return;
               }
-              onInsertWaypoint(mp.index, [mp.lng, mp.lat]);
+              onInsertWaypoint(h.index, h.position);
             }}
           >
             <div className="midpoint" title="Drag to bend · click to insert">

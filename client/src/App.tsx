@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import MapView from "./components/MapView";
+import MapView, { type InsertHandle } from "./components/MapView";
 import RouteBuilderPanel from "./components/RouteBuilderPanel";
 import HeatmapControls from "./components/HeatmapControls";
 import SavedRoutesList from "./components/SavedRoutesList";
@@ -30,6 +30,8 @@ export default function App() {
   const [waypoints, setWaypoints] = useState<LngLat[]>([]);
   const [buildMode, setBuildMode] = useState(true);
   const [preview, setPreview] = useState<RoutePreview | null>(null);
+  // The waypoints `preview` was computed for.
+  const [previewFor, setPreviewFor] = useState<LngLat[] | null>(null);
   const [loadingRoute, setLoadingRoute] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
   const [loadedRoute, setLoadedRoute] = useState<SavedRoute | null>(null);
@@ -83,6 +85,7 @@ export default function App() {
         .then((res) => {
           if (id !== reqId.current) return; // stale
           setPreview(res);
+          setPreviewFor(waypoints);
         })
         .catch((err) => {
           if (id !== reqId.current) return;
@@ -165,6 +168,20 @@ export default function App() {
     if (currentSavedId === id) clear();
     refreshSaved();
   }
+
+  // Draw each waypoint where it attached to the path network, and the "+"
+  // handles halfway along each leg's path. Until the next preview arrives, a
+  // waypoint that changed is drawn where it was placed, and the handles next
+  // to it are hidden.
+  const fresh = (i: number) =>
+    !!preview && !!previewFor && samePoint(previewFor[i], waypoints[i]);
+  const markerPositions = waypoints.map((wp, i) =>
+    fresh(i) && preview?.snapped[i] ? preview.snapped[i] : wp,
+  );
+  const insertHandles: InsertHandle[] = waypoints.slice(1).flatMap((_, i) => {
+    const leg = preview?.legs[i];
+    return leg && fresh(i) && fresh(i + 1) ? [{ index: i + 1, position: leg.midpoint }] : [];
+  });
 
   // Unified display source: a loaded saved route, else the live preview.
   const display = loadedRoute
@@ -256,7 +273,8 @@ export default function App() {
 
       <main className="map-area">
         <MapView
-          waypoints={waypoints}
+          waypoints={markerPositions}
+          insertHandles={insertHandles}
           routeCoordinates={display.coords}
           heatmap={SHOW_HEATMAP ? heatmap : null}
           heatmapVisible={heatmapVisible}
@@ -269,4 +287,8 @@ export default function App() {
       </main>
     </div>
   );
+}
+
+function samePoint(a: LngLat | undefined, b: LngLat | undefined): boolean {
+  return !!a && !!b && a[0] === b[0] && a[1] === b[1];
 }

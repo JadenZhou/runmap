@@ -5,10 +5,20 @@ export interface ElevationProfilePoint {
   ele_m: number;
 }
 
+export interface RouteLeg {
+  distance_m: number;
+  /** Halfway along the leg's path. */
+  midpoint: LngLat;
+}
+
 export interface RoutePreview {
   coordinates: LngLat[];
   distance_m: number;
   provider: string;
+  /** Where each waypoint attached to the path network, one per waypoint. */
+  snapped: LngLat[];
+  /** One per pair of consecutive waypoints. */
+  legs: RouteLeg[];
   elevation: {
     profile: ElevationProfilePoint[];
     gain_m: number;
